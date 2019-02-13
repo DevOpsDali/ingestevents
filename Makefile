@@ -23,4 +23,4 @@ docker-run: docker ## Build and run the application
 docker-shell: docker ## Build the container and execute a shell
 	docker run --rm --name $(CONTAINER_NAME) -i -t --env-file $(VAR_FILE) $(PORTS) --entrypoint /bin/bash $(IMAGE_NAME)
 docker-test: docker ## Build the container and run tests
-	docker run -i -t --env-file $(VAR_FILE) $(PORTS) --entrypoint /ingestevents/test.sh $(IMAGE_NAME)
+	docker run -i -t --env-file $(VAR_FILE) $(PORTS) $(IMAGE_NAME) test
