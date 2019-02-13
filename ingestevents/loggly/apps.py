@@ -25,5 +25,6 @@ class LogglyAppConfig(AppConf): #Stub for setting some initial config options
   DD_INCLUDE_AGGREGATION_KEY = False if "DD_INCLUDE_AGGREGATION_KEY" not in os.environ else os.environ.get('DD_INCLUDE_AGGREGATION_KEY')
   DD_INCLUDE_SOURCE_TYPE_NAME = False if "DD_INCLUDE_SOURCE_TYPE_NAME" not in os.environ else os.environ.get('DD_INCLUDE_SOURCE_TYPE_NAME')
   
+  #Don't prepend the app name to the start of these variables
   class Meta:
     prefix = ''

@@ -1,20 +1,18 @@
-# from django.db import models
-
-# # Create your models here.
 import sys, time, os, json, logging, traceback
-from threading import Thread #Allow sending of data dog event as a thread
+from threading import Thread
 from datetime import datetime 
 
-from datadog.api.exceptions import ApiError, ApiNotInitialized
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils import timezone
-from django.contrib.auth.models import User
-from django.conf import settings
 from django.db import connection
+from django.utils import timezone
 
-from datadog import initialize, api #Data dog imports for standard usage and error handling
+#Data dog imports for standard usage and error handling
+from datadog import initialize, api 
+from datadog.api.exceptions import ApiNotInitialized
 
+#Import our settings
 from .apps import LogglyAppConfig
 
 logger = logging.getLogger('info')
@@ -37,7 +35,7 @@ class LogglyEvent(models.Model):
   search_link = models.TextField()
   query = models.TextField()
   num_hits = models.PositiveIntegerField()
-  recent_hits = models.TextField(blank=True)
+  recent_hits = models.TextField(blank=True) #Allow empty values since the Loggly example shows an empty list
   owner_username = models.TextField()
   owner_subdomain = models.TextField()
   owner_email = models.TextField()
@@ -54,8 +52,8 @@ class DataDogThread():
   def __init__(self, logging_id):
     #Initialize the object with valid defaults
     self.logging_id = logging_id
-    self.title = settings.DD_DEFAULT_TITLE #Required: using non-empty values just in case
-    self.text = None # "   "
+    self.title = settings.DD_DEFAULT_TITLE #Required: using non-empty value just in case
+    self.text = None
     self.date_happened = None
     self.priority = "normal"    
     self.host = None

@@ -17,10 +17,11 @@ help:
 # Build the container
 docker: ## Builds the container
 	docker build -t $(IMAGE_NAME) .
-docker-run: docker ## Build and run the application
-	#docker build -t $(IMAGE_NAME) .
+docker-run: docker ## Builds and runs the container detached
+	docker run --env-file $(VAR_FILE) $(PORTS) --name $(CONTAINER_NAME) $(IMAGE_NAME)
+docker-run-d: docker ## Builds and runs the container detached
 	docker run -d --env-file $(VAR_FILE) $(PORTS) --name $(CONTAINER_NAME) $(IMAGE_NAME)
-docker-shell: docker ## Build the container and execute a shell
+docker-shell: docker ## Build the container and execute a shell overriding the default entrypoint
 	docker run --rm --name $(CONTAINER_NAME) -i -t --env-file $(VAR_FILE) $(PORTS) --entrypoint /bin/bash $(IMAGE_NAME)
 docker-test: docker ## Build the container and run tests
 	docker run -i -t --env-file $(VAR_FILE) $(PORTS) $(IMAGE_NAME) test

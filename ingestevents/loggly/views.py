@@ -1,7 +1,7 @@
 import json, sys, time, logging, uuid
-from django.shortcuts import render
-from django.http import Http404
-from django.db import connection
+#from django.shortcuts import render
+#from django.http import Http404
+#from django.db import connection
 from django.http import JsonResponse
 from django.core import serializers
 from django.conf import settings
@@ -26,22 +26,25 @@ def loggly(request):
   error_string = {}
   trace_id = str(uuid.uuid4())
   base_log_string = f"{trace_id} - "
+
   logger.info(f"{base_log_string}Loggly Request received")
-  
   try:
     body=json.loads(request.body.decode('utf-8')) #Ensure that the request is valid JSON
     data=JSONParser().parse(request)
   except json.JSONDecodeError as e:
     error_string = { "Error" : f"Request was not valid JSON" }
     logger.error(f"{base_log_string}Request was not valid JSON")
+    logger.error(f"{base_log_string}" + request.body.decode('utf-8'))
     return JsonResponse(error_string, status=status.HTTP_400_BAD_REQUEST)
   except ValueError as e:
     error_string = { "Error" : f"Request was not valid JSON" }
     logger.error(f"{base_log_string}Request was not valid JSON")
+    logger.error(f"{base_log_string}" + request.body.decode('utf-8'))
     return JsonResponse({error_string}, status=status.HTTP_400_BAD_REQUEST)
   except TypeError as e:
     error_string = { "Error" : f"Request was not valid a valid type" }
     logger.error(f"{base_log_string}Request was not valid JSON")
+    logger.error(f"{base_log_string}" + request.body.decode('utf-8'))
     return JsonResponse(error_string, status=status.HTTP_400_BAD_REQUEST)  
 
   #Should likely setup some sort of check against the source of the POST data.

@@ -131,6 +131,7 @@ class DataDogUnitTests(TransactionTestCase):
   def test_datadog_insert_of_good_event(self):
     print("test_datadog_insert_of_good_event")
     test_datadog_insert_of_good_event = DataDogThread(self.test_id) 
+    #Build our own event string here. This feels like it should go in the setup, but need to have DataDogThread initilized first 
     test_datadog_insert_of_good_event.title = self.good_event_object.alert_name
     test_datadog_insert_of_good_event.text = f'''Alert Source Group: {self.good_event_object.source_group}
                     Search Link {self.good_event_object.search_link}
