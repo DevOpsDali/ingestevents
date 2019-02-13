@@ -9,8 +9,6 @@ class LogglySerializer(serializers.ModelSerializer):
     detail = None
     errors = {}
 
-    print("")
-
     if not isinstance(data['recent_hits'], list):
       detail = ErrorDetail("Should be list", code="invalid")
       errors['recent_hits'] = detail
@@ -18,13 +16,13 @@ class LogglySerializer(serializers.ModelSerializer):
       data['recent_hits'] = ','.join(data['recent_hits'])
     
     try:
-      datetime.strptime(data['start_time'], '%b %d %I:%M:%S')
+      datetime.strptime(data['start_time'], '%b %d %H:%M:%S')
     except ValueError as e:
       detail = ErrorDetail("Does not match expected date format", code="invalid")
       errors['start_time'] = detail
     
     try:
-      datetime.strptime(data['end_time'], '%b %d %I:%M:%S')
+      datetime.strptime(data['end_time'], '%b %d %H:%M:%S')
     except ValueError as e:
       detail = ErrorDetail("Does not match expected date format", code="invalid")
       errors['end_time'] = detail

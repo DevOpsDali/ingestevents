@@ -10,6 +10,9 @@ RUN pip install -r requirements.txt
 ADD entrypoint.sh /ingestevents/
 RUN chmod +x entrypoint.sh
 
+ADD test.sh /ingestevents/
+RUN chmod +x test.sh
+
 ADD ingestevents/. /ingestevents/
 
 EXPOSE 80

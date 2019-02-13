@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework import status
-
+from django.http import HttpRequest
 
 from .models import LogglyEvent, DataDogThread
 from .serializers import LogglySerializer
@@ -20,14 +20,22 @@ def loggly(request):
   status_code = 500
   body = None
   try:
-    body=json.loads(request.body.decode('utf-8'))
+    body=json.loads(request.body.decode('utf-8')) #Ensure that the request is valid JSON
     data=JSONParser().parse(request)
   except ValueError as e:
     return JsonResponse({"Error": "Request contained invalid JSON"}, status=status.HTTP_400_BAD_REQUEST)
   
+  #Should likely setup some sort of check against the source of the POST data.
+  #Couldn't be sure of what the loggly request is going to look like but possibly do something like:
+  
+  # if "KnownLogglyValue" not in HttpRequest.get_host(request):
+  #   return(JsonResponse("", status=status.HTTP_403_FORBIDDEN))
+  #
+  
+
+  #Check if data is valid
   serializer = LogglySerializer(data=data)
-  if not serializer.is_valid():
-    print(serializer.errors, serializer.data)
+  if not serializer.is_valid(): #Ensure data is valid. If not return a list of errors
     return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
   else:
     event = LogglyEvent( #Ingest the json event and pass to the model

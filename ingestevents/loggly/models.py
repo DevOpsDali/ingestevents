@@ -7,6 +7,7 @@ from datetime import datetime
 
 from datadog import initialize, api #Data dog imports for standard usage and error handling
 from datadog.api.exceptions import ApiError, ApiNotInitialized
+from django.core.exceptions import ValidationError
 
 from django.db import models
 from django.utils import timezone
@@ -40,7 +41,7 @@ class LogglyAppConfig(AppConf): #Stub for setting some initial config options
     prefix = ''
 
 class LogglyEvent(models.Model):
-
+  #Most of the model views are going to just be text, and the fields that should be something like a date aren't coming in in a valid timestamp format
   alert_name = models.TextField()
   edit_alert_link = models.TextField()
   source_group = models.TextField()
@@ -54,17 +55,19 @@ class LogglyEvent(models.Model):
   owner_subdomain = models.TextField()
   owner_email = models.TextField()
 
+  #Return the ID as a string
   def __str__(self):
-    return self.id
+    return str(self.id)
 
+  #Save the event. We're doing data validation/manipulation in the serializer before we get here.
   def save(self, *args, **kwargs):
     super(LogglyEvent, self).save(*args, **kwargs)
 
 class DataDogThread(Thread):
   def __init__(self):
-    #Event Data
-    self.title = settings.DD_DEFAULT_TITLE #Required: using non-empty value
-    self.text = settings.DD_DEFAULT_TEXT #Required: using non-empty value
+    #Initialize the object with valid defaults
+    self.title = settings.DD_DEFAULT_TITLE #Required: using non-empty values just in case
+    self.text = settings.DD_DEFAULT_TEXT # "   "
     self.date_happened = None
     self.priority = "normal"    
     self.host = None
@@ -77,8 +80,9 @@ class DataDogThread(Thread):
     super(DataDogThread, self).__init__()
 
   def generate_generic_event_data(self, event):
+    status = False
+    try:
       self.text = f'''Alert Source Group: {event.source_group}
-                      Alert End Time: {event.end_time}
                       Search Link {event.search_link}
                       Query: {event.query}
                       Owner: {event.owner_username} | {event.owner_email}
@@ -89,16 +93,24 @@ class DataDogThread(Thread):
       #Hard enforcing length of the string currently. It would likely be better to enforce internal limits on certain text fields instead depending on the data
       if len(self.text) > 4000: 
         self.text = self.text[:4000]
+    except ValueError as e:
+      raise ValueError('An error occured generating event data')
+    finally:
+      return status
 
-  def format_date_happened(self, event): #Function to handle converting Loggly to Posix
-    #Loggly gives us two time stamps to choose from. Using default if we haven't explicitly stated which one to use
-    time_list = event.start_time.split(" ") if settings.DD_USE_START_TIME else event.end_time.split(" ") 
-    
-    #For some reason the year isn't included in the Loggly time stamps.
-    #For now just assume it's the current year and insert it so we get a valid posix timestamps
-    time_list.insert(2, datetime.strftime(datetime.now(), '%y'))
-    date_object = datetime.strptime(" ".join(time_list), '%b %d %y %I:%M:%S')
-    self.date_happened = int(time.mktime(date_object.timetuple()))
+  def format_date_happened(self, event): #Function to handle converting Loggly timestamp to Posix
+    try:
+      #Loggly gives us two time stamps to choose from. Using default if we haven't explicitly stated which one to use
+      time_list = event.start_time.split(" ") if settings.DD_USE_START_TIME else event.end_time.split(" ") 
+      
+      #For some reason the year isn't included in the Loggly time stamps.
+      #For now just assume it's the current year and insert it so we get a valid posix timestamps
+      time_list.insert(2, datetime.strftime(datetime.now(), '%y'))
+      date_object = datetime.strptime(" ".join(time_list), '%b %d %y %H:%M:%S')
+      self.date_happened = int(time.mktime(date_object.timetuple()))
+      status = True
+    except ValueError as e:
+      raise ValueError('A problem occured with converting the timestamp to POSIX')
 
   def known_event_type(self, event):
     pass
@@ -113,16 +125,16 @@ class DataDogThread(Thread):
       initialize(**options)
 
       self.response = api.Event.create(
-                              title=self.title, 
-                              text=self.text, 
-                              date_happened=self.date_happened,
-                              priority=self.priority,
-                              host=self.host,
-                              tags=self.tags,
-                              alert_type=self.alert_type,
-                              aggregation_key=self.aggregation_key,
-                              source_type_name=self.source_type_name
-                              )
+                        title=self.title, 
+                        text=self.text, 
+                        date_happened=self.date_happened,
+                        priority=self.priority,
+                        host=self.host,
+                        tags=self.tags,
+                        alert_type=self.alert_type,
+                        aggregation_key=self.aggregation_key,
+                        source_type_name=self.source_type_name
+                      )
     except ApiNotInitialized as e:
       print("Problem initializing the datadog API: {}".format(e))
       self.status = False
@@ -149,6 +161,8 @@ class DataDogThread(Thread):
         self.title = event.alert_name if len(event.alert_name) < 100 else event.alert_name[:100] #Hard force the title to be under 100 characters
         self.generate_generic_event_data(event)
       self.put_event(event)
+      self.status = True
     except:
       print("Unhandled Error while processing the event: {}".format(sys.exc_info()[0]))
       self.status = False
+    return self.status

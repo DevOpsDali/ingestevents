@@ -4,5 +4,5 @@ from loggly import views
 from django.views.generic import RedirectView
 
 urlpatterns = [
-    url(r'^loggly/',views.loggly)
+    url(r'^loggly/',views.loggly, name= 'loggly')
 ]
